@@ -304,10 +304,10 @@ ffmpeg \
   -framerate 30 \
   -pix_fmt yuv420p \
   -vcodec libx264 \
-  -crf 18 \
+  -crf 22 \
   -y \
   -loglevel error \
   movies/umap.mp4
 ```
 
-https://github.com/jeroenjanssens/umap-animated/assets/1368256/3a967d88-02e7-4085-ae49-b85fe154b442
+https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
