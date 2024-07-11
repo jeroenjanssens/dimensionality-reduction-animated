@@ -54,7 +54,7 @@ def get_pixels(df_, seed=None):
         .group_by("digit").first()
         .drop("index")
         .unpivot(index=["digit"])
-        .with_columns(pl.col("variable").str.strip_prefix("pixel").cast(pl.UInt16).alias("pixel"))
+        .with_columns(pixel=pl.col("variable").str.strip_prefix("pixel").cast(pl.UInt16))
         .with_columns(x=(pl.col("pixel")-1) % 28,
                       y=27-(pl.col("pixel")-1) // 28)
         .drop("variable", "pixel")
@@ -309,3 +309,5 @@ ffmpeg \
   -loglevel error \
   movies/umap.mp4
 ```
+
+https://github.com/jeroenjanssens/umap-animated/assets/1368256/3a967d88-02e7-4085-ae49-b85fe154b442
