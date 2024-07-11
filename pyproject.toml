@@ -7,8 +7,8 @@ polars = "^1.0.0"
 plotnine = "^0.13.6"
 jupyterlab = "^4.2.3"
 pyarrow = "^16.1.0"
-umap-learn = {path = "/Users/jeroen/repos/mine/umap"}
 tqdm = "^4.66.4"
+umap-learn = {git = "https://github.com/jeroenjanssens/umap.git"}
 
 [build-system]
 requires = ["poetry-core"]

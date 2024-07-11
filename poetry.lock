@@ -2909,8 +2909,10 @@ plot = ["bokeh", "colorcet", "datashader", "holoviews", "matplotlib", "pandas", 
 tbb = ["tbb (>=2019.0)"]
 
 [package.source]
-type = "directory"
-url = "../umap"
+type = "git"
+url = "https://github.com/jeroenjanssens/umap.git"
+reference = "HEAD"
+resolved_reference = "ef59c814acb2b74e84d921d8fa28484baffae594"
 
 [[package]]
 name = "uri-template"
@@ -2999,4 +3001,4 @@ test = ["websockets"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "6c2a32c03012fc276de33f131349ec38f7c3a328d7be91e0e7b59a2d08a376aa"
+content-hash = "c1fca9577df064ee0e046de035ccf5b164c67b49de68c76bc7a0e08bc88809ed"
