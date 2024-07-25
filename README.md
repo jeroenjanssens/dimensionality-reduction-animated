@@ -1,5 +1,32 @@
-# UMAP Animated
+# Dimensionality Reduction, Animated
 
+
+<img align="right" width="400" height="400" src="images/intro.png">
+
+Understanding your data is key in any data science project.
+Visualization is useful for this, but can be challenging when the data
+has a high dimensionality. This includes complex data such as text,
+images, and sensor measurements. You could create a scatter plot matrix,
+but this can only show how any two features interact and fails to
+capture structure across many dimensions.
+
+There’s an entire subfield within machine learning concerned with
+exactly this challenge: dimensionality reduction. Dimensionality
+reduction algorithms can help you gain insight into your
+high-dimensional data and reveal whether there’s any structure. The
+current state-of-the-art dimensionality reduction algorithm is UMAP,
+which stands for Uniform Manifold Approximation and Projection for
+Dimension Reduction.
+
+In this post we’re going to apply UMAP to the MNIST dataset, a
+collection of 70,000 handwritten digits. Each digit is an image of 28 by
+28 grayscale pixels, making the dimensionality of the dataset 784. UMAP
+will embed this dataset into two dimensions, allowing us to understand
+its structure.
+
+To be honest, the MNIST dataset is already used way too often in machine
+learning demos, including those about UMAP. What’s done less often, is
+look at how UMAP creates an embedding.
 
 ``` python
 from plotnine import *
@@ -152,13 +179,13 @@ def plot_digits(df_, height=3):
 plot_digits(df_pixels.filter(pl.col("digit") == "7"))
 ```
 
-![](visualize_files/figure-commonmark/cell-9-output-1.png)
+![](visualize_files/figure-commonmark/cell-10-output-1.png)
 
 ``` python
 plot_digits(df_pixels, height=8)
 ```
 
-![](visualize_files/figure-commonmark/cell-10-output-1.png)
+![](visualize_files/figure-commonmark/cell-11-output-1.png)
 
 ## Plot embedding
 
@@ -193,7 +220,7 @@ num_digits = df_epochs.select(pl.col("index").max()).item() + 1
 ```
 
 ``` python
-def plot_embedding(df_, epoch, max_epochs, legend=True):
+def plot_embedding(df_, epoch, max_epochs, legend=True, dpi=100):
     df_ = (df_.filter(pl.col("epoch") == epoch))
     
     frame = (
@@ -209,14 +236,15 @@ def plot_embedding(df_, epoch, max_epochs, legend=True):
               subtitle="Each point is a handwritten digit")
         + theme_void(base_size=16, base_family="Futura")
         + theme(
-           text=element_text(color="white"),
-           plot_title=element_text(ha="left"),
-           plot_caption=element_text(ha="left"),
-           axis_title=element_blank(),
-           axis_text=element_blank(),
-           plot_margin=0.05,
-           plot_background=element_rect(fill="black"),
-           figure_size=(8, 8)
+            text=element_text(color="white"),
+            plot_title=element_text(ha="left"),
+            plot_caption=element_text(ha="left"),
+            axis_title=element_blank(),
+            axis_text=element_blank(),
+            plot_margin=0.05,
+            plot_background=element_rect(fill="black"),
+            figure_size=(8, 8),
+            dpi=dpi
         )
     )
 
@@ -232,22 +260,26 @@ def plot_embedding(df_, epoch, max_epochs, legend=True):
 ```
 
 ``` python
+plot_embedding(df_epochs, num_epochs-1, num_epochs, legend=True, dpi=50).save("images/intro.png", verbose=False)
+```
+
+``` python
 plot_embedding(df_epochs, 0, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-14-output-1.png)
+![](visualize_files/figure-commonmark/cell-16-output-1.png)
 
 ``` python
 plot_embedding(df_epochs, num_epochs//4, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-15-output-1.png)
+![](visualize_files/figure-commonmark/cell-17-output-1.png)
 
 ``` python
 plot_embedding(df_epochs, num_epochs-1, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-16-output-1.png)
+![](visualize_files/figure-commonmark/cell-18-output-1.png)
 
 ## Combine into one picture
 
