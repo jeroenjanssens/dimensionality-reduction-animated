@@ -26,18 +26,23 @@ its structure.
 
 To be honest, the MNIST dataset is already used way too often in machine
 learning demos, including those about UMAP. What’s done less often, is
-look at how UMAP creates an embedding.
+look at *how* UMAP creates an embedding, by visualizing the intermediate
+results at every step (also known as an epoch).
+
+## Result
+
+The result of this notebook is an animation where each frame is an
+epoch. On the right are random samples of each digit. This gives us an
+idea of how all the variations look like. Plus, it serves as a legend.
+
+https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
 
 ``` python
 from plotnine import *
 import polars as pl
-```
 
-``` python
-pl.Config.set_tbl_cols(10)
+pl.Config.set_tbl_cols(10);
 ```
-
-    polars.config.Config
 
 ## Understanding handwritten digits as high-dimensional vectors
 
@@ -179,13 +184,13 @@ def plot_digits(df_, height=3):
 plot_digits(df_pixels.filter(pl.col("digit") == "7"))
 ```
 
-![](visualize_files/figure-commonmark/cell-10-output-1.png)
+![](visualize_files/figure-commonmark/cell-8-output-1.png)
 
 ``` python
 plot_digits(df_pixels, height=8)
 ```
 
-![](visualize_files/figure-commonmark/cell-11-output-1.png)
+![](visualize_files/figure-commonmark/cell-9-output-1.png)
 
 ## Plot embedding
 
@@ -227,13 +232,13 @@ def plot_embedding(df_, epoch, max_epochs, legend=True, dpi=100):
         ggplot(df_, aes("x", "y", color="digit"))
         + geom_point(size=0.04, alpha=1)
         + annotate("segment", x=0, y=1.05, xend=epoch/max_epochs, yend=1.05, 
-                  color="white", size=1)
+                   color="white", size=1)
         + guides(colour=guide_legend(override_aes={"size": 5, "alpha": 1}))
         + scale_color_brewer(type="qual", palette=3)
         + scale_x_continuous(limits=(0, 1), expand=(0, 0.001, 0, 0.001))
         + scale_y_continuous(limits=(0, 1.06), expand=(0, 0.01, 0, 0.01))
         + labs(title="MNIST data embedded into two dimensions by UMAP",
-              subtitle="Each point is a handwritten digit")
+               subtitle="Each point is a handwritten digit")
         + theme_void(base_size=16, base_family="Futura")
         + theme(
             text=element_text(color="white"),
@@ -267,49 +272,31 @@ plot_embedding(df_epochs, num_epochs-1, num_epochs, legend=True, dpi=50).save("i
 plot_embedding(df_epochs, 0, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-16-output-1.png)
+![](visualize_files/figure-commonmark/cell-14-output-1.png)
 
 ``` python
 plot_embedding(df_epochs, num_epochs//4, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-17-output-1.png)
+![](visualize_files/figure-commonmark/cell-15-output-1.png)
 
 ``` python
 plot_embedding(df_epochs, num_epochs-1, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-18-output-1.png)
+![](visualize_files/figure-commonmark/cell-16-output-1.png)
 
-## Combine into one picture
+## Combine the embedding and the legend into one picture
 
 ``` python
-plot_embedding(df_epochs, num_epochs-1, num_epochs, legend=False).save("images/embedding.png", verbose=False)
-plot_digits(get_pixels(df_digits, seed=42), height=8).save("images/legend.png", verbose=False)
+from util import combine_plots
 ```
 
 ``` python
-from PIL import Image
-
-# Open the images
-embedding_img = Image.open("images/embedding.png")
-legend_img = Image.open("images/legend.png")
-
-# Get the dimensions of the images
-embedding_width, embedding_height = embedding_img.size
-legend_width, legend_height = legend_img.size
-
-# Create a new image with the combined width and the maximum height of the two images
-combined_width = embedding_width + legend_width
-combined_height = max(embedding_height, legend_height)
-combined_img = Image.new("RGB", (combined_width, combined_height))
-
-# Paste the images into the new image
-combined_img.paste(embedding_img, (0, 0))
-combined_img.paste(legend_img, (embedding_width, 0))
-
-# Save the combined image
-combined_img.save("images/combined.png")
+combine_plots([
+    plot_embedding(df_epochs, num_epochs-1, num_epochs, legend=False),
+    plot_digits(get_pixels(df_digits, seed=42), height=8)
+], "images/combined.png", orientation="horizontal")
 ```
 
 ![](images/combined.png)
@@ -321,8 +308,10 @@ Need `ffmpeg`
 ``` python
 for i in range(num_epochs):
     print(f"Frame {i}/{num_epochs-1}", end="\r")
-    plot_embedding(df_epochs, i, num_epochs, legend=False).save(f"frames/embedding-{i:06}.png", verbose=False)
-    plot_digits(get_pixels(df_digits), height=8).save(f"frames/legend-{i:06}.png", verbose=False)
+    combine_plots([
+        plot_embedding(df_epochs, i, num_epochs, legend=False),
+        plot_digits(get_pixels(df_digits), height=8)
+    ], f"frames/combined-{i:06}.png", orientation="horizontal")
 ```
 
     Frame 199/199
@@ -330,9 +319,7 @@ for i in range(num_epochs):
 ``` python
 %%bash
 ffmpeg \
-  -i frames/embedding-%06d.png \
-  -i frames/legend-%06d.png \
-  -filter_complex "[0:v][1:v]hstack=inputs=2" \
+  -i frames/combined-%06d.png \
   -framerate 30 \
   -pix_fmt yuv420p \
   -vcodec libx264 \
