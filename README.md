@@ -32,10 +32,8 @@ results at every step (also known as an epoch).
 ## Result
 
 The result of this notebook is an animation where each frame is an
-epoch. On the right are random samples of each digit. This gives us an
-idea of how all the variations look like. Plus, it serves as a legend.
-
-https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
+epoch. On the right are random samples of each digit, to give us an idea
+of how all the variations look like and to serve as a legend.
 
 ``` python
 %%HTML
@@ -48,13 +46,26 @@ https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe
     <source src="movies/umap.mp4" type="video/mp4">
 </video>
 
+https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
+
+There are a couple of interesting things to note:
+
+- UMAP has a decent embedding already after a couple of epochs.
+- The long shape of cluster “1” is probably because the way a “1” is
+  written, depends mostly on the angle. Other digits have more degrees
+  of freedom.
+- The clusters “3”, “5”, “8” are close together. Probably because
+  they’re often confused.
+- The same can be said for clusters “4”, “7”, and “9”.
+- Towards the end of the optimization the noisiness is reduced.
+
 ## Applying UMAP
 
-The notebook *prepare.ipynb* prepares the data necessary to generate the
-visualizations and animations. It creates two files:
-*data/digits.parquet* and *data/epochs.parquet*. Because these two files
-are already present in the repository, you don’t necessarily need to run
-this notebook.
+The notebook *prepare.ipynb* applies UMAP and prepares the data
+necessary to generate the visualizations and animations. It creates two
+files: *data/digits.parquet* and *data/epochs.parquet*. Because these
+two files are already present in the repository, you don’t necessarily
+need to run this notebook.
 
 ``` python
 from plotnine import *
@@ -235,6 +246,10 @@ plot_digits(df_pixels, height=8)
 
 ![](visualize_files/figure-commonmark/cell-10-output-1.png)
 
+Note that we’re using an unsupervised algorithm here, meaning that UMAP
+doesn’t know which high-dimensional vector belongs to which digit. The
+coloring is only used for visualization purposes.
+
 ## Plot embedding
 
 To plot an embedding, we’re going to read the Parquet file
@@ -387,11 +402,7 @@ combine_plots([
 ## Animate
 
 To create the animation, we first generate all the frames as individual
-PNG files. We then use `ffmpeg` to stitch the 200 PNG files into an MP4
-movie. (Plotnine offers a
-[PlotnineAnimation](https://plotnine.org/reference/PlotnineAnimation.html)
-class to animate ggplot objects, but it currently [has some
-issues](https://github.com/has2k1/plotnine/issues/816).)
+PNG files.
 
 ``` python
 for i in range(num_epochs):
@@ -401,18 +412,16 @@ for i in range(num_epochs):
     ], f"frames/combined-{i:06}.png", orientation="horizontal")
 ```
 
-    Exception ignored in: <bound method IPythonKernel._clean_thread_parent_frames of <ipykernel.ipkernel.IPythonKernel object at 0x1058a59a0>>
-    Traceback (most recent call last):
-      File "/Users/jeroen/Library/Caches/pypoetry/virtualenvs/non-package-mode-ZsQjsKQj-py3.12/lib/python3.12/site-packages/ipykernel/ipkernel.py", line 775, in _clean_thread_parent_frames
-        def _clean_thread_parent_frames(
+We then use `ffmpeg` to stitch the 200 PNG files into an MP4 movie.
+(Plotnine offers a
+[PlotnineAnimation](https://plotnine.org/reference/PlotnineAnimation.html)
+class to animate ggplot objects, but it currently [has some
+issues](https://github.com/has2k1/plotnine/issues/816).)
 
-    KeyboardInterrupt: 
-    Exception ignored in: <bound method IPythonKernel._clean_thread_parent_frames of <ipykernel.ipkernel.IPythonKernel object at 0x1058a59a0>>
-    Traceback (most recent call last):
-      File "/Users/jeroen/Library/Caches/pypoetry/virtualenvs/non-package-mode-ZsQjsKQj-py3.12/lib/python3.12/site-packages/ipykernel/ipkernel.py", line 775, in _clean_thread_parent_frames
-        def _clean_thread_parent_frames(
-
-    KeyboardInterrupt: 
+The most important argument is `-i`, which specifies the PNG files. The
+arguments `-pix_fmt`, `-vcodec`, and `-crf` define the video encoding
+and compression. The argument `-y` causes `ffmpeg` to override existing
+files.
 
 ``` python
 %%bash
@@ -441,3 +450,29 @@ ffmpeg \
 </video>
 
 https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
+
+## Conclusion
+
+There are a couple of interesting things to note about this animation:
+
+- UMAP has a decent embedding already after a couple of epochs.
+- The long shape of cluster “1” is probably because the way a “1” is
+  written, depends mostly on the angle. Other digits have more degrees
+  of freedom.
+- The clusters “3”, “5”, “8” are close together. Probably because
+  they’re often confused.
+- The same can be said for clusters “4”, “7”, and “9”.
+- Towards the end of the optimization the noisiness is reduced.
+
+This animation suggests that visualizing and animating intermediate
+results of otherwise complicated algorithms can help us understand them.
+They can be complementary to the math and the implementation of the
+algorithms.
+
+## References
+
+- [UMAP](https://umap-learn.readthedocs.io/en/latest/)
+- [Forked version of UMAP that saves intermediate
+  embeddings](https://github.com/jeroenjanssens/umap)
+- [MNIST Database](https://en.wikipedia.org/wiki/MNIST_database)
+- [ffmpeg](https://ffmpeg.org/)
