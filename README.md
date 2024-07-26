@@ -38,13 +38,40 @@ idea of how all the variations look like. Plus, it serves as a legend.
 https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
 
 ``` python
+%%HTML
+<video alt="test" controls>
+    <source src="movies/umap.mp4" type="video/mp4">
+</video>
+```
+
+<video alt="test" controls>
+    <source src="movies/umap.mp4" type="video/mp4">
+</video>
+
+## Applying UMAP
+
+The notebook *prepare.ipynb* prepares the data necessary to generate the
+visualizations and animations. It creates two files:
+*data/digits.parquet* and *data/epochs.parquet*. Because these two files
+are already present in the repository, you don’t necessarily need to run
+this notebook.
+
+``` python
 from plotnine import *
 import polars as pl
+
+from util import combine_plots
 
 pl.Config.set_tbl_cols(10);
 ```
 
 ## Understanding handwritten digits as high-dimensional vectors
+
+Machine learning algorithms, such as UMAP, assume that each row is a
+data point. That means that one hand-written digit is a row of 784
+values, in other words, a high-dimensional vector. The values, by the
+way, vary from 0 to 255 to represent the amount of ink. Here’s a portion
+of the very wide DataFrame `df_digits`.
 
 ``` python
 df_digits = pl.read_parquet("data/digits.parquet")
@@ -71,7 +98,14 @@ df_digits
 
 </div>
 
+Our goal is to reduce the dimensionality from 784 to 2, so that we can
+create a scatter plot.
+
 ## Plot digits
+
+To better understanding what the handwritten digits actually look like,
+we can visualize them using Plotnine. For this, we need to wrangle a
+wide row into a long DataFrame of `x` and `y` values.
 
 ``` python
 def get_pixels(df_, seed=None):
@@ -92,6 +126,8 @@ def get_pixels(df_, seed=None):
         .drop("variable", "pixel")
     )
 ```
+
+Here’s what the result looks like for a hand-written “7”:
 
 ``` python
 df_pixels = get_pixels(df_digits, seed=42)
@@ -117,6 +153,9 @@ df_pixels.filter(pl.col("digit") == "7")
 | "7"   | 0     | 27  | 0   |
 
 </div>
+
+If we make this long DataFrame square, and squint our eyes, we can
+actually see a “7”:
 
 ``` python
 with pl.Config(tbl_rows=30, tbl_cols=30):
@@ -160,6 +199,10 @@ with pl.Config(tbl_rows=30, tbl_cols=30):
 
 </div>
 
+However, we have Plotnine at our disposal, so let’s use that instead.
+The following function uses the `geom_tile()` and `facet_wrap()`
+functions. We’re going to use it to create a legend of all 10 digits.
+
 ``` python
 def plot_digits(df_, height=3):
     return (
@@ -184,15 +227,20 @@ def plot_digits(df_, height=3):
 plot_digits(df_pixels.filter(pl.col("digit") == "7"))
 ```
 
-![](visualize_files/figure-commonmark/cell-8-output-1.png)
+![](visualize_files/figure-commonmark/cell-9-output-1.png)
 
 ``` python
 plot_digits(df_pixels, height=8)
 ```
 
-![](visualize_files/figure-commonmark/cell-9-output-1.png)
+![](visualize_files/figure-commonmark/cell-10-output-1.png)
 
 ## Plot embedding
+
+To plot an embedding, we’re going to read the Parquet file
+*data/epochs.parquet* into a DataFrame called `df_epochs`. This is a
+very long DataFrame containing the `x` and `y` position of each digit at
+every epoch.
 
 ``` python
 df_epochs = pl.read_parquet("data/epochs.parquet")
@@ -219,10 +267,22 @@ df_epochs
 
 </div>
 
+From the 60,000 available digits, we use 30,000 of them. We let UMAP
+optimize for 200 epochs. This is to keep the final animation below 10MB
+so that GitHub can include it in the README.
+
 ``` python
-num_epochs = df_epochs.select(pl.col("epoch").max()).item() + 1
 num_digits = df_epochs.select(pl.col("index").max()).item() + 1
+num_epochs = df_epochs.select(pl.col("epoch").max()).item() + 1
 ```
+
+The following function creates a scatter plot using the `geom_point()`
+function. The `max_epoch` argument is used to add a progress bar (using
+the `annotate()` function) underneath the title. The majority of the
+code is responsible for styling the plot. The `legend` argument is set
+to `False` when we combine the scatter plot with the visualizations of
+the digits show above. The `dpi` argument is only used to create the
+small image at the beginning of this notebook.
 
 ``` python
 def plot_embedding(df_, epoch, max_epochs, legend=True, dpi=100):
@@ -265,32 +325,55 @@ def plot_embedding(df_, epoch, max_epochs, legend=True, dpi=100):
 ```
 
 ``` python
+# Create a small image to add to the beginning of this notebook
 plot_embedding(df_epochs, num_epochs-1, num_epochs, legend=True, dpi=50).save("images/intro.png", verbose=False)
 ```
+
+### Initial embedding
+
+UMAP begins by constructing a weighted k-nearest neighbor graph from the
+high-dimensional data. It then performs spectral embedding, which
+involves computing the eigenvectors of the graph Laplacian. This step
+provides an initial low-dimensional representation of the data.
 
 ``` python
 plot_embedding(df_epochs, 0, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-14-output-1.png)
+![](visualize_files/figure-commonmark/cell-15-output-1.png)
+
+### Intermediate embeddings
+
+After the spectral embedding, UMAP refines the embedding using a
+non-linear optimization technique. It minimizes a cross-entropy loss
+function that aligns the high-dimensional data structure with the
+low-dimensional representation. This optimization is done using
+stochastic gradient descent.
 
 ``` python
 plot_embedding(df_epochs, num_epochs//4, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-15-output-1.png)
+![](visualize_files/figure-commonmark/cell-16-output-1.png)
+
+### Final embedding
+
+As the optimization progresses, the algorithm approaches a local minimum
+of the loss function. The gradients of the loss function become smaller,
+leading to smaller updates to the embeddings. This is a natural part of
+gradient-based optimization processes, where convergence typically slows
+as the solution nears the optimum.
 
 ``` python
 plot_embedding(df_epochs, num_epochs-1, num_epochs)
 ```
 
-![](visualize_files/figure-commonmark/cell-16-output-1.png)
+![](visualize_files/figure-commonmark/cell-17-output-1.png)
 
 ## Combine the embedding and the legend into one picture
 
-``` python
-from util import combine_plots
-```
+We use the function `combine_plots()` from *utils.py* to put the
+embedding and the legend next to each other.
 
 ``` python
 combine_plots([
@@ -303,18 +386,33 @@ combine_plots([
 
 ## Animate
 
-Need `ffmpeg`
+To create the animation, we first generate all the frames as individual
+PNG files. We then use `ffmpeg` to stitch the 200 PNG files into an MP4
+movie. (Plotnine offers a
+[PlotnineAnimation](https://plotnine.org/reference/PlotnineAnimation.html)
+class to animate ggplot objects, but it currently [has some
+issues](https://github.com/has2k1/plotnine/issues/816).)
 
 ``` python
 for i in range(num_epochs):
-    print(f"Frame {i}/{num_epochs-1}", end="\r")
     combine_plots([
         plot_embedding(df_epochs, i, num_epochs, legend=False),
         plot_digits(get_pixels(df_digits), height=8)
     ], f"frames/combined-{i:06}.png", orientation="horizontal")
 ```
 
-    Frame 199/199
+    Exception ignored in: <bound method IPythonKernel._clean_thread_parent_frames of <ipykernel.ipkernel.IPythonKernel object at 0x1058a59a0>>
+    Traceback (most recent call last):
+      File "/Users/jeroen/Library/Caches/pypoetry/virtualenvs/non-package-mode-ZsQjsKQj-py3.12/lib/python3.12/site-packages/ipykernel/ipkernel.py", line 775, in _clean_thread_parent_frames
+        def _clean_thread_parent_frames(
+
+    KeyboardInterrupt: 
+    Exception ignored in: <bound method IPythonKernel._clean_thread_parent_frames of <ipykernel.ipkernel.IPythonKernel object at 0x1058a59a0>>
+    Traceback (most recent call last):
+      File "/Users/jeroen/Library/Caches/pypoetry/virtualenvs/non-package-mode-ZsQjsKQj-py3.12/lib/python3.12/site-packages/ipykernel/ipkernel.py", line 775, in _clean_thread_parent_frames
+        def _clean_thread_parent_frames(
+
+    KeyboardInterrupt: 
 
 ``` python
 %%bash
@@ -328,5 +426,18 @@ ffmpeg \
   -loglevel error \
   movies/umap.mp4
 ```
+
+## Final result
+
+``` python
+%%HTML
+<video alt="test" controls>
+    <source src="movies/umap.mp4" type="video/mp4">
+</video>
+```
+
+<video alt="test" controls>
+    <source src="movies/umap.mp4" type="video/mp4">
+</video>
 
 https://github.com/jeroenjanssens/umap-animated/assets/1368256/cc7aa083-20db-4fe7-9647-98992676ab3c
