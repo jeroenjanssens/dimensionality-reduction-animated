@@ -416,7 +416,9 @@ We then use `ffmpeg` to stitch the 200 PNG files into an MP4 movie.
 (Plotnine offers a
 [PlotnineAnimation](https://plotnine.org/reference/PlotnineAnimation.html)
 class to animate ggplot objects, but it currently [has some
-issues](https://github.com/has2k1/plotnine/issues/816).)
+issues](https://github.com/has2k1/plotnine/issues/816).) Note that
+Plotnine uses matplotlib under the hood, which, in turn, uses `ffmpeg`
+to create animations.
 
 The most important argument is `-i`, which specifies the PNG files. The
 arguments `-pix_fmt`, `-vcodec`, and `-crf` define the video encoding
